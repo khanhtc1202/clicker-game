@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reaction app</title>
+    <style type="text/css">
+        #shape {
+            width: 200px;
+            height: 200px;
+            background-color: red;
+            display: none;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test your reaction app</h1>
+    <p>Description: Click on the boxes as fast as you can!</p>
+    <p>Your time: <span id="timeTaken"></span></p>
+    <p>Best score: <span id="bestScore"></span></p>
+
+    <div id="shape"></div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script type="text/javascript">
+        let start = new Date().getTime();
+        let highScore = Number.MAX_SAFE_INTEGER;
+        let size = 500;
+        let w_width = window.innerWidth;
+        let w_height = window.innerHeight;
+        let base_ep = "http://localhost:8081";
+
+        function makeShapeAppear() {
+            $.get(`${base_ep}/hs`, function (data) {
+                    highScore = data.hs;
+                    document.getElementById("bestScore").innerHTML = highScore + "s";
+                }
+            );
+
+            $.get(`${base_ep}/size`, function (data) {
+                    size = data.size;
+                }
+            );
+
+            let width = Math.random()*size/2 + 100;
+            let top = Math.random()*size % w_height;
+            let left = Math.random()*size % w_width;
+
+            document.getElementById("shape").style.width = width + "px";
+            document.getElementById("shape").style.height = width + "px";
+            document.getElementById("shape").style.top = top + "px";
+            document.getElementById("shape").style.left = left + "px";
+            document.getElementById("shape").style.display = "block";
+            document.getElementById("shape").style.backgroundColor = getRandomColor();
+
+            start = new Date().getTime();
+        }
+
+        function appearAfterDelay() {
+            setTimeout(makeShapeAppear, Math.random()*2000);
+        }
+
+        function getRandomColor() {
+            let letters = "0123456789ABCDEF";
+            let color = "#";
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        appearAfterDelay();
+        document.getElementById("shape").onclick = function () {
+            document.getElementById("shape").style.display = "none";
+            let end = new Date().getTime();
+            let timeTaken = (end - start)/1000;
+            document.getElementById("timeTaken").innerHTML = timeTaken + "s";
+            if (timeTaken < highScore) {
+                $.post(`${base_ep}/hs/${timeTaken}`, function (data) {
+                        highScore = timeTaken;
+                        document.getElementById("bestScore").innerHTML = highScore + "s";
+                    }
+                );
+            }
+            $.post(`${base_ep}/score/${timeTaken}`);
+            appearAfterDelay();
+        }
+    </script>
+</body>
+</html>
